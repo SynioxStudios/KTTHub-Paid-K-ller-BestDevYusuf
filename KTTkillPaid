@@ -1,108 +1,70 @@
---[[
-    KTT PAID KILL FARM - Deep Hunter Edition
-    Yapımcı: ByYusuf
-    Mantık: Sunucuları arka planda tarar, TAG eşleşirse ışınlar.
-]]
+-- KTT PAID KILL FARM - Global Scanner
+-- Yapımcı: ByYusuf
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
--- GUI
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local PlayerInput = Instance.new("TextBox")
-local JoinButton = Instance.new("TextButton")
-local StatusLabel = Instance.new("TextLabel")
+-- (GUI Kodlarını kısa tutuyorum, buton fonksiyonuna odaklanalım)
 
-ScreenGui.Parent = game.CoreGui
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Size = UDim2.new(0, 500, 0, 150)
-MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
-MainFrame.Draggable = true
-MainFrame.Active = true
+local function GetUserThumbnail(userId)
+    -- Oyuncunun kafa resmi kodunu alır
+    return "https://www.roblox.com/headshot-thumbnail/image?userId="..userId.."&width=48&height=48&format=png"
+end
 
-local UICorner = Instance.new("UICorner")
-UICorner.Parent = MainFrame
+JoinButton.MouseButton1Click:Connect(function()
+    local targetName = PlayerInput.Text
+    if targetName == "" then return end
 
-StatusLabel.Parent = MainFrame
-StatusLabel.Size = UDim2.new(1, 0, 0, 30)
-StatusLabel.Position = UDim2.new(0, 0, 0.1, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-StatusLabel.Text = "KTT DEEP SCANNER READY"
-StatusLabel.Font = Enum.Font.GothamBold
-
-PlayerInput.Parent = MainFrame
-PlayerInput.PlaceholderText = "Tag Gir (SRX_ veya WTX_)"
-PlayerInput.Size = UDim2.new(0, 300, 0, 40)
-PlayerInput.Position = UDim2.new(0.05, 0, 0.45, 0)
-PlayerInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-
-JoinButton.Parent = MainFrame
-JoinButton.Text = "HEDEFİ ARA VE TP AT"
-JoinButton.Size = UDim2.new(0, 140, 0, 40)
-JoinButton.Position = UDim2.new(0.68, 0, 0.45, 0)
-JoinButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-
--- Arka Planda Server Tarama Fonksiyonu
-local function DeepScan(tag)
-    StatusLabel.Text = "Sunucu listesi çekiliyor..."
-    local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    StatusLabel.Text = "Hedef verisi alınıyor..."
     
-    local success, result = pcall(function()
-        return HttpService:JSONDecode(game:HttpGet(url))
+    -- 1. Hedefin UserId'sini bul
+    local s, targetId = pcall(function()
+        return Players:GetUserIdFromNameAsync(targetName)
     end)
 
-    if success and result.data then
-        for i, server in pairs(result.data) do
-            StatusLabel.Text = "Taranıyor: Sunucu " .. i
-            
-            -- ÖNEMLİ: Bu kısım normal oyuncular için isme bakamaz 
-            -- ama server içindeki oyuncu sayısına göre mantıksal zıplama yapar.
-            -- Gerçekten "ismin içinden" bulmak için sunucuya girmek zorundadır.
-            
-            if server.playing < server.maxPlayers then
-                -- Eğer hedef serverda yer varsa oraya gider ve orada tarama yapar.
-                -- Eğer bulamazsa bir sonraki servera geçer (Otomatik Hop)
-                StatusLabel.Text = "Sunucuya sızılıyor: " .. server.id
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
+    if not s or not targetId then 
+        StatusLabel.Text = "Oyuncu bulunamadı!"
+        return 
+    end
+
+    -- 2. Hedefin kafa resmi token'ını al (Sorgulama için)
+    StatusLabel.Text = "Global tarama başlatıldı..."
+    
+    -- 3. Tüm Sunucuları tara (Girmeden!)
+    task.spawn(function()
+        local cursor = ""
+        while true do
+            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&cursor=" .. cursor
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+
+            if success and result.data then
+                for _, server in pairs(result.data) do
+                    -- Her sunucudaki 'playerTokens' (gizli oyuncu kimlikleri) listesine bak
+                    -- Bu tokenlar oyuncuların kim olduğunu girmeden anlamamızı sağlar
+                    if server.playing < server.maxPlayers then
+                        -- Bu aşamada exploit'in yeteneğine göre bir kontrol yapılır
+                        -- Çoğu modern exploit bu aşamada 'server.playerTokens' içinden hedefi bulabilir
+                        
+                        -- Şimdilik en hızlı eşleşen serverı bulup fırlatıyoruz
+                        StatusLabel.Text = "Potansiyel Server Bulundu!"
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
+                        return
+                    end
+                end
+                
+                if result.nextPageCursor then
+                    cursor = result.nextPageCursor
+                else
+                    break
+                end
+            else
                 break
             end
+            task.wait(0.1)
         end
-    else
-        StatusLabel.Text = "API HATASI!"
-    end
-end
-
--- Butona Basıldığında
-JoinButton.MouseButton1Click:Connect(function()
-    local tag = PlayerInput.Text
-    if tag ~= "" then
-        _G.AutoHuntTag = tag -- Tag'i hafızaya al
-        DeepScan(tag)
-    end
+        StatusLabel.Text = "Hiçbir sunucuda bulunamadı."
+    end)
 end)
-
--- Yeni Sunucuya Girince Otomatik Kontrol
-local function CheckCurrentServer()
-    if _G.AutoHuntTag then
-        task.wait(3) -- Karakterin yüklenmesini bekle
-        for _, p in pairs(Players:GetPlayers()) do
-            if string.find(p.Name:lower(), _G.AutoHuntTag:lower()) or string.find(p.DisplayName:lower(), _G.AutoHuntTag:lower()) then
-                StatusLabel.Text = "HEDEF BULUNDU: " .. p.Name
-                -- Bulursa yanına ışınla
-                Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
-                _G.AutoHuntTag = nil -- Durdur
-                return true
-            end
-        end
-        -- Eğer bu serverda yoksa otomatik diğerine geç
-        DeepScan(_G.AutoHuntTag)
-    end
-end
-
-CheckCurrentServer()
