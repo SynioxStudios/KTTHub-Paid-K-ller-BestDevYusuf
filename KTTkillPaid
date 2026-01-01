@@ -1,130 +1,57 @@
---[[
-    KTT PAID KILL FARM
-    Yapımcı: ByYusuf
-    Özellikler: Cross-Server Player Tracker & Teleport
-]]
+-- KTT PAID KILL FARM - Tag Hunter (Server Hopper)
+-- Yapımcı: ByYusuf
 
-local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
-local LocalPlayer = Players.LocalPlayer
+local Players = game:GetService("Players")
 
--- GUI OLUŞTURMA
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local Title = Instance.new("TextLabel")
-local Credit = Instance.new("TextLabel")
-local PlayerInput = Instance.new("TextBox")
-local JoinButton = Instance.new("TextButton")
-local JoinCorner = Instance.new("UICorner")
+-- (GUI Kodları aynı kalıyor, sadece JoinButton fonksiyonunu tamamen değiştiriyoruz)
 
--- Panel Ayarları
-ScreenGui.Parent = game.CoreGui
-ScreenGui.Name = "KTT_PaidKillFarm"
-
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 500, 0, 150)
-MainFrame.Active = true
-MainFrame.Draggable = true
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
-
--- Başlık
-Title.Parent = MainFrame
-Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0.05, 0, 0.05, 0)
-Title.Size = UDim2.new(0, 250, 0, 30)
-Title.Font = Enum.Font.GothamBold
-Title.Text = "KTT PAID KILL FARM"
-Title.TextColor3 = Color3.fromRGB(255, 0, 0)
-Title.TextSize = 18
-Title.TextXAlignment = Enum.TextXAlignment.Left
-
--- ByYusuf İmzası
-Credit.Parent = MainFrame
-Credit.BackgroundTransparency = 1
-Credit.Position = UDim2.new(0.65, 0, 0.75, 0)
-Credit.Size = UDim2.new(0, 160, 0, 30)
-Credit.Font = Enum.Font.Code
-Credit.Text = "ByYusuf"
-Credit.TextColor3 = Color3.fromRGB(150, 150, 150)
-Credit.TextSize = 18
-Credit.TextXAlignment = Enum.TextXAlignment.Right
-
--- Giriş Kutusu (TextBox)
-PlayerInput.Parent = MainFrame
-PlayerInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-PlayerInput.Position = UDim2.new(0.05, 0, 0.4, 0)
-PlayerInput.Size = UDim2.new(0, 250, 0, 35)
-PlayerInput.PlaceholderText = "Hedef oyuncu ismini yaz..."
-PlayerInput.Text = ""
-PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-local InputCorner = Instance.new("UICorner")
-InputCorner.CornerRadius = UDim.new(0, 5)
-InputCorner.Parent = PlayerInput
-
--- JOIN / TP Butonu
-JoinButton.Parent = MainFrame
-JoinButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
-JoinButton.Position = UDim2.new(0.58, 0, 0.4, 0)
-JoinButton.Size = UDim2.new(0, 120, 0, 35)
-JoinButton.Font = Enum.Font.GothamBold
-JoinButton.Text = "JOIN / TP"
-JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-JoinCorner.Parent = JoinButton
-
--- FONKSİYONLAR
 JoinButton.MouseButton1Click:Connect(function()
-    local targetName = PlayerInput.Text
-    if targetName == "" then 
-        PlayerInput.Text = "İsim yazmalısın!"
-        task.wait(1)
-        PlayerInput.Text = ""
-        return 
-    end
+    local searchTag = PlayerInput.Text:lower() -- Yazdığın tag (Örn: srx_)
+    if searchTag == "" then return end
     
-    PlayerInput.Text = "Aranıyor..."
+    PlayerInput.Text = "Tag taranıyor: " .. searchTag
     
-    -- 1. Server İçinde Arama
-    local foundLocal = false
+    -- 1. ADIM: Mevcut server'da var mı?
     for _, v in pairs(Players:GetPlayers()) do
-        if v.Name:lower():sub(1, #targetName) == targetName:lower() then
-            foundLocal = true
-            if v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                PlayerInput.Text = "Işınlandı: " .. v.Name
-            end
-            break
+        if v.Name:lower():sub(1, #searchTag) == searchTag then
+            PlayerInput.Text = "Burada bulundu! TP..."
+            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+            return
         end
     end
 
-    -- 2. Farklı Server'da Arama (Eğer serverda yoksa)
-    if not foundLocal then
-        PlayerInput.Text = "Serverlar taranıyor..."
-        
-        local success, targetId = pcall(function()
-            return Players:GetUserIdFromNameAsync(targetName)
+    -- 2. ADIM: Diğer server'ları taramaya başla
+    PlayerInput.Text = "Serverlar taranıyor..."
+    
+    local function SearchEmptyServers()
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
         end)
-
-        if success and targetId then
-            local jumpSuccess, err = pcall(function()
-                -- Oyuncunun 'Join' ayarları açıksa otomatik o server'a aktarır
-                TeleportService:TeleportToPlaceInstance(game.PlaceId, "", LocalPlayer)
-            end)
-            
-            if not jumpSuccess then
-                PlayerInput.Text = "Ayarlar Kapalı!"
+        
+        if success and result and result.data then
+            for _, server in pairs(result.data) do
+                if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                    -- Bu kısım seni rastgele serverlara hızlıca atar (Hop)
+                    -- Çünkü direkt server içine girmeden isimleri görmek Roblox'ta zordur.
+                    -- Script seni saniyeler içinde yeni server'a sokar.
+                    PlayerInput.Text = "Yeni Server'a Geçiliyor..."
+                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
+                    break
+                end
             end
         else
-            PlayerInput.Text = "Oyuncu Bulunamadı!"
+            PlayerInput.Text = "Hata: API Kısıtlı!"
         end
     end
-    
-    task.wait(2)
-    PlayerInput.Text = ""
+
+    SearchEmptyServers()
 end)
 
-print("KTT PAID KILL FARM Başarıyla Yüklendi! Yapımcı: ByYusuf")
+-- EKSTRA: Otomatik Server Giriş Kontrolü
+-- Eğer yeni bir server'a girersek, script otomatik olarak tag'i kontrol etsin
+game.Players.PlayerAdded:Connect(function(player)
+    -- Buraya girdiğin server'da tag'li birini bulursa uyarı verecek kod eklenebilir.
+end)
