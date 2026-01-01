@@ -32,16 +32,16 @@ local function StartCheck()
             end
 
             if isAllowed then
-                -- ✅ Erişim Onaylandı
-                print("Welcome, ByYusuf!")
+                -- ✅ Onaylandı
+                print("Access Granted ByYusuf!")
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ İSTEDİĞİN ÖZEL MESAJ (Görünmesi için optimize edildi)
-                local msg = "\n\nNot Whitelisted! Where did you get this? Your account is mine now! 💀🔥"
-                LocalPlayer:Kick(msg)
+                -- ❌ Sert İngilizce Mesaj (Görünme Garantili Format)
+                local kickMessage = "No Whitelist! Where did you get this? Your account is mine now 💀"
+                LocalPlayer:Kick(kickMessage)
             end
         else
-            LocalPlayer:Kick("System Error ⚠️")
+            LocalPlayer:Kick("Database Error ⚠️")
         end
     else
         LocalPlayer:Kick("Connection Error 🌐")
