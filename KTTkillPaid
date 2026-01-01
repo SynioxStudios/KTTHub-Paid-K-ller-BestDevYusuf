@@ -1,57 +1,106 @@
--- KTT PAID KILL FARM - Tag Hunter (Server Hopper)
--- Yapımcı: ByYusuf
+--[[
+    KTT PAID KILL FARM - Tag Hunter Edition
+    Yapımcı: ByYusuf
+    Mantık: Yazılan TAG'i bulana kadar server değiştirir.
+]]
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- (GUI Kodları aynı kalıyor, sadece JoinButton fonksiyonunu tamamen değiştiriyoruz)
+-- (GUI Tasarımı - Senin istediğin yatay geniş panel)
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local PlayerInput = Instance.new("TextBox")
+local JoinButton = Instance.new("TextButton")
+local Title = Instance.new("TextLabel")
+local Credit = Instance.new("TextLabel")
 
-JoinButton.MouseButton1Click:Connect(function()
-    local searchTag = PlayerInput.Text:lower() -- Yazdığın tag (Örn: srx_)
-    if searchTag == "" then return end
-    
-    PlayerInput.Text = "Tag taranıyor: " .. searchTag
-    
-    -- 1. ADIM: Mevcut server'da var mı?
-    for _, v in pairs(Players:GetPlayers()) do
-        if v.Name:lower():sub(1, #searchTag) == searchTag then
-            PlayerInput.Text = "Burada bulundu! TP..."
-            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
-            return
-        end
-    end
+ScreenGui.Parent = game.CoreGui
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0, 500, 0, 150)
+MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
+MainFrame.Draggable = true
+MainFrame.Active = true
 
-    -- 2. ADIM: Diğer server'ları taramaya başla
-    PlayerInput.Text = "Serverlar taranıyor..."
+local UICorner = Instance.new("UICorner")
+UICorner.Parent = MainFrame
+
+Title.Parent = MainFrame
+Title.Text = "KTT PAID KILL FARM"
+Title.TextColor3 = Color3.fromRGB(255, 0, 0)
+Title.Size = UDim2.new(0, 250, 0, 30)
+Title.Position = UDim2.new(0.05, 0, 0.05, 0)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+Credit.Parent = MainFrame
+Credit.Text = "ByYusuf"
+Credit.TextColor3 = Color3.fromRGB(150, 150, 150)
+Credit.Position = UDim2.new(0.65, 0, 0.75, 0)
+Credit.Size = UDim2.new(0, 160, 0, 30)
+Credit.BackgroundTransparency = 1
+Credit.Font = Enum.Font.Code
+
+PlayerInput.Parent = MainFrame
+PlayerInput.PlaceholderText = "Aranacak Tag (Örn: SRX_)"
+PlayerInput.Size = UDim2.new(0, 250, 0, 35)
+PlayerInput.Position = UDim2.new(0.05, 0, 0.4, 0)
+PlayerInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+JoinButton.Parent = MainFrame
+JoinButton.Text = "TAGI BUL VE KATIL"
+JoinButton.Size = UDim2.new(0, 160, 0, 35)
+JoinButton.Position = UDim2.new(0.58, 0, 0.4, 0)
+JoinButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinButton.Font = Enum.Font.GothamBold
+
+-- SERVER HOP MANTIĞI
+local function ServerHop()
+    local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(url))
+    end)
     
-    local function SearchEmptyServers()
-        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
-        local success, result = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
-        end)
-        
-        if success and result and result.data then
-            for _, server in pairs(result.data) do
-                if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                    -- Bu kısım seni rastgele serverlara hızlıca atar (Hop)
-                    -- Çünkü direkt server içine girmeden isimleri görmek Roblox'ta zordur.
-                    -- Script seni saniyeler içinde yeni server'a sokar.
-                    PlayerInput.Text = "Yeni Server'a Geçiliyor..."
-                    TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
-                    break
-                end
+    if success and result.data then
+        for _, server in pairs(result.data) do
+            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, LocalPlayer)
+                break
             end
-        else
-            PlayerInput.Text = "Hata: API Kısıtlı!"
         end
     end
+end
 
-    SearchEmptyServers()
+-- ANA FONKSİYON
+JoinButton.MouseButton1Click:Connect(function()
+    local tag = PlayerInput.Text:lower()
+    if tag == "" then return end
+    
+    PlayerInput.Text = "Server taranıyor..."
+    
+    local found = false
+    -- Mevcut serverdaki herkesin hem kullanıcı adına hem görünen ismine bak
+    for _, p in pairs(Players:GetPlayers()) do
+        if p.Name:lower():sub(1, #tag) == tag or p.DisplayName:lower():sub(1, #tag) == tag then
+            found = true
+            PlayerInput.Text = "Buldum! TP Atılıyor..."
+            LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            break
+        end
+    end
+    
+    if not found then
+        PlayerInput.Text = "Bu serverda yok, zıplanıyor..."
+        task.wait(1)
+        ServerHop() -- Hedef yoksa başka server'a geç
+    end
 end)
 
--- EKSTRA: Otomatik Server Giriş Kontrolü
--- Eğer yeni bir server'a girersek, script otomatik olarak tag'i kontrol etsin
-game.Players.PlayerAdded:Connect(function(player)
-    -- Buraya girdiğin server'da tag'li birini bulursa uyarı verecek kod eklenebilir.
-end)
+-- EKSTRA: Yeni server'a girdiğinde otomatik kontrol (Opsiyonel)
+-- Bu kısmı istersen "Execute" ettiğin an çalışacak şekilde ayarlayabilirsin.
