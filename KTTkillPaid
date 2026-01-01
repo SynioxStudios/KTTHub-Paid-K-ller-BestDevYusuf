@@ -1,6 +1,5 @@
 --[[
-    🚀 YUSUF EMIR REDYUS - PRIVATE LOADER 🚀
-    English Version with Clean Kick UI
+    🚀 BYYUSUF - PRIVATE LOADER 🚀
 --]]
 
 local Players = game:GetService("Players")
@@ -13,7 +12,6 @@ local config = {
 }
 
 local function StartCheck()
-    -- Veri çekme işlemi
     local success, content = pcall(function() 
         return game:HttpGet(config.whitelist) 
     end)
@@ -36,17 +34,17 @@ local function StartCheck()
 
             if isAllowed then
                 -- ✅ Erişim Onaylandı
-                warn("Access Granted! Enjoy your script.")
+                warn("Access Granted! Welcome back.")
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ İngilizce ve Şık Kick Mesajı
-                LocalPlayer:Kick("Not Whitelisted: Access is restricted 🚫")
+                -- ❌ İstediğin Sert İngilizce Mesaj ve Emojiler
+                LocalPlayer:Kick("You are not Whitelisted. Where did you get this? Your account is mine now 💀🔥")
             end
         else
-            LocalPlayer:Kick("System Error: Invalid Database ⚠️")
+            LocalPlayer:Kick("System Error ⚠️")
         end
     else
-        LocalPlayer:Kick("Network Error: Check Connection 🌐")
+        LocalPlayer:Kick("Connection Error 🌐")
     end
 end
 
