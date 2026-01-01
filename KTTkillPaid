@@ -1,0 +1,89 @@
+-- KTT PAID KILL FARM - Teleport Test Version
+-- Yapımcı: ByYusuf
+
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local Title = Instance.new("TextLabel")
+local Credit = Instance.new("TextLabel")
+local PlayerInput = Instance.new("TextBox")
+local JoinButton = Instance.new("TextButton")
+local JoinCorner = Instance.new("UICorner")
+
+-- UI Ayarları
+ScreenGui.Parent = game.CoreGui
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
+MainFrame.Size = UDim2.new(0, 500, 0, 150)
+MainFrame.Active = true
+MainFrame.Draggable = true
+UICorner.Parent = MainFrame
+
+Title.Parent = MainFrame
+Title.Text = "KTT PAID KILL FARM"
+Title.TextColor3 = Color3.fromRGB(255, 0, 0)
+Title.TextSize = 18
+Title.Size = UDim2.new(0, 250, 0, 30)
+Title.Position = UDim2.new(0.05, 0, 0.05, 0)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.GothamBold
+
+Credit.Parent = MainFrame
+Credit.Text = "ByYusuf"
+Credit.TextColor3 = Color3.fromRGB(150, 150, 150)
+Credit.TextSize = 18
+Credit.Position = UDim2.new(0.65, 0, 0.75, 0)
+Credit.Size = UDim2.new(0, 160, 0, 30)
+Credit.BackgroundTransparency = 1
+Credit.Font = Enum.Font.Code
+
+-- TextBox
+PlayerInput.Parent = MainFrame
+PlayerInput.PlaceholderText = "Oyuncu ismi yazın..."
+PlayerInput.Size = UDim2.new(0, 250, 0, 35)
+PlayerInput.Position = UDim2.new(0.05, 0, 0.4, 0)
+PlayerInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+local tCorner = Instance.new("UICorner")
+tCorner.CornerRadius = UDim.new(0, 5)
+tCorner.Parent = PlayerInput
+
+-- Buton
+JoinButton.Parent = MainFrame
+JoinButton.Text = "TELEPORT"
+JoinButton.Size = UDim2.new(0, 120, 0, 35)
+JoinButton.Position = UDim2.new(0.58, 0, 0.4, 0)
+JoinButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinButton.Font = Enum.Font.GothamBold
+JoinCorner.Parent = JoinButton
+
+-- TELEPORT FONKSİYONU
+JoinButton.MouseButton1Click:Connect(function()
+    local targetName = PlayerInput.Text:lower()
+    local targetPlayer = nil
+    
+    -- Serverdaki oyuncuları tara
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v.Name:lower():sub(1, #targetName) == targetName then
+            targetPlayer = v
+            break
+        end
+    end
+    
+    if targetPlayer then
+        if targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            -- Hedefin 3 birim arkasına ışınla
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+            PlayerInput.Text = "Işınlandı: " .. targetPlayer.Name
+        else
+            PlayerInput.Text = "Karakter yüklenmedi!"
+        end
+    else
+        PlayerInput.Text = "Oyuncu bulunamadı!"
+    end
+    
+    task.wait(2)
+    PlayerInput.Text = ""
+end)
