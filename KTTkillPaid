@@ -5,7 +5,6 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Ayarlar
 local config = {
     whitelist = "https://pastebin.com/raw/bj3aQnNh",
     script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt"
@@ -34,11 +33,12 @@ local function StartCheck()
 
             if isAllowed then
                 -- ✅ Erişim Onaylandı
-                warn("Access Granted! Welcome back.")
+                print("Welcome, ByYusuf!")
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ İstediğin Sert İngilizce Mesaj ve Emojiler
-                LocalPlayer:Kick("You are not Whitelisted. Where did you get this? Your account is mine now 💀🔥")
+                -- ❌ İSTEDİĞİN ÖZEL MESAJ (Görünmesi için optimize edildi)
+                local msg = "\n\nNot Whitelisted! Where did you get this? Your account is mine now! 💀🔥"
+                LocalPlayer:Kick(msg)
             end
         else
             LocalPlayer:Kick("System Error ⚠️")
