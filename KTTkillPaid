@@ -1,23 +1,19 @@
 --[[
-    🚀 YUSUF EMIR REDYUS - ÖZEL LOADER 🚀
-    🛡️ Whitelist Onayı Sonrası GitHub Scriptini Çalıştırır.
+    🚀 YUSUF EMIR REDYUS - LOADER v2 🚀
 --]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Ayarlar
-local whitelistUrl = "https://pastebin.com/raw/bj3aQnNh" -- Senin Whitelist Linkin
-local scriptUrl = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt" -- Çalışacak Script
+local whitelistUrl = "https://pastebin.com/raw/bj3aQnNh" 
+local scriptUrl = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt" 
 
 local function DogrulamaVeCalistir()
-    -- 1. Whitelist Verisini Çek
     local success, content = pcall(function()
         return game:HttpGet(whitelistUrl)
     end)
 
     if success then
-        -- 2. İçeriği Tabloya Dönüştür
         local loadSuccess, whitelist = pcall(function()
             return loadstring(content)()
         end)
@@ -26,7 +22,6 @@ local function DogrulamaVeCalistir()
             local myName = LocalPlayer.Name:lower()
             local yetkiVarmi = false
 
-            -- 3. İsim Kontrolü Yap
             for name, value in pairs(whitelist) do
                 if name:lower() == myName and value == true then
                     yetkiVarmi = true
@@ -35,30 +30,18 @@ local function DogrulamaVeCalistir()
             end
 
             if yetkiVarmi then
-                -- ✅ BEYAZ LİSTEDE VAR: Scripti Çalıştır
-                print("------------------------------------------")
-                print("✅ ERİŞİM ONAYLANDI: " .. LocalPlayer.Name)
-                print("🌀 Script Yükleniyor, lütfen bekleyin...")
-                print("------------------------------------------")
-                
-                local scriptSuccess, scriptErr = pcall(function()
-                    loadstring(game:HttpGet(scriptUrl))()
-                end)
-                
-                if not scriptSuccess then
-                    warn("⚠️ Script çalıştırılırken hata oluştu: ", scriptErr)
-                end
+                warn("✅ ERİŞİM ONAYLANDI!")
+                loadstring(game:HttpGet(scriptUrl))()
             else
-                -- ❌ BEYAZ LİSTEDE YOK: Oyundan At (Emoji Eklendi)
-                LocalPlayer:Kick("\n\n⚠️ [ERİŞİM REDDEDİLDİ] ⚠️\n\n🚫 Bu scripti kullanma yetkiniz yok!\n👤 Kullanıcı: " .. LocalPlayer.Name .. "\n👑 Sahibi: yusufemirredyus\n\n✨ Daha fazla bilgi için sahibiyle iletişime geçin. ✨")
+                -- Mesajı daha kısa ve net yaptık ki ekranda görünsün
+                LocalPlayer:Kick("\n\n🚫 [YETKİSİZ ERİŞİM] 🚫\n\nİsminiz listede yok!\nSahip: yusufemirredyus")
             end
         else
-            LocalPlayer:Kick("\n⚙️ [SİSTEM HATASI]\nWhitelist verisi okunamadı. Lütfen daha sonra tekrar deneyin.")
+            LocalPlayer:Kick("❌ Liste Okunma Hatası!")
         end
     else
-        LocalPlayer:Kick("\n🌐 [BAĞLANTI HATASI]\nSunucuyla bağlantı kurulamadı. İnternetinizi kontrol edin.")
+        LocalPlayer:Kick("❌ İnternet/Bağlantı Hatası!")
     end
 end
 
--- Loader'ı Başlat
 DogrulamaVeCalistir()
