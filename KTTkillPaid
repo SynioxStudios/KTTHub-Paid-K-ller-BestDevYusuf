@@ -37,18 +37,19 @@ local function CheckWhitelist()
 
             if isAuthorized then
                 -- ✅ Onaylandı: Scripti çalıştır
+                print("Erisim Onaylandi!")
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ Yetkisiz: Sadece emoji
-                LocalPlayer:Kick("🚫")
+                -- ❌ Yetkisiz: Emoji + Kısa Metin
+                LocalPlayer:Kick("🚫 Erisim Reddedildi: Listede yoksunuz.")
             end
         else
-            -- ⚙️ Liste Bozuk: Sadece emoji
-            LocalPlayer:Kick("⚙️")
+            -- ⚙️ Liste Bozuk
+            LocalPlayer:Kick("⚙️ Hata: Liste okunamadi.")
         end
     else
-        -- 🌐 Bağlantı Yok: Sadece emoji
-        LocalPlayer:Kick("🌐")
+        -- 🌐 Bağlantı Yok
+        LocalPlayer:Kick("🌐 Hata: Baglanti kurulamadi.")
     end
 end
 
