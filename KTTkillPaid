@@ -1,57 +1,52 @@
 --[[
-    🚀 YUSUF EMIR REDYUS - ÖZEL LOADER 🚀
+    🚀 ByYusuf - PRIVATE LOADER 🚀
 --]]
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Ayarlar
+-- Configuration
 local config = {
     whitelist = "https://pastebin.com/raw/bj3aQnNh",
     script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt"
 }
 
-local function CheckWhitelist()
-    -- Whitelist verisini çek
+local function StartCheck()
+    -- Fetching Whitelist
     local success, content = pcall(function()
         return game:HttpGet(config.whitelist)
     end)
 
     if success then
-        -- Veriyi tabloya çevir
         local loadSuccess, whitelistTable = pcall(function()
             return loadstring(content)()
         end)
 
         if loadSuccess and type(whitelistTable) == "table" then
             local myName = LocalPlayer.Name:lower()
-            local isAuthorized = false
+            local isAllowed = false
 
-            -- İsim kontrolü
-            for authorizedName, value in pairs(whitelistTable) do
-                if authorizedName:lower() == myName and value == true then
-                    isAuthorized = true
+            for name, value in pairs(whitelistTable) do
+                if name:lower() == myName and value == true then
+                    isAllowed = true
                     break
                 end
             end
 
-            if isAuthorized then
-                -- ✅ Onaylandı: Scripti çalıştır
-                print("Erisim Onaylandi!")
+            if isAllowed then
+                -- ✅ Success: Loading the script
+                warn("Access Granted! Loading script...")
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ Yetkisiz: Emoji + Kısa Metin
-                LocalPlayer:Kick("🚫 Erisim Reddedildi: Listede yoksunuz.")
+                -- ❌ Kick message in English with Emoji
+                LocalPlayer:Kick("🚫 Access Denied: You are not whitelisted.")
             end
         else
-            -- ⚙️ Liste Bozuk
-            LocalPlayer:Kick("⚙️ Hata: Liste okunamadi.")
+            LocalPlayer:Kick("⚠️ Database Error: Please try again later.")
         end
     else
-        -- 🌐 Bağlantı Yok
-        LocalPlayer:Kick("🌐 Hata: Baglanti kurulamadi.")
+        LocalPlayer:Kick("🌐 Connection Error: Failed to reach server.")
     end
 end
 
--- Başlat
-CheckWhitelist()
+StartCheck()
