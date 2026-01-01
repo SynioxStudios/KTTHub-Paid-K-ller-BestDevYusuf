@@ -1,105 +1,108 @@
 --[[
-    KTT PAID KILL FARM - Arka Plan Avcısı
+    KTT PAID KILL FARM - Deep Hunter Edition
     Yapımcı: ByYusuf
-    Mantık: Sen girmeden serverları tarar, hedefi bulunca ışınlar.
+    Mantık: Sunucuları arka planda tarar, TAG eşleşirse ışınlar.
 ]]
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
--- GUI (Senin yatay geniş tasarımın)
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local PlayerInput = Instance.new("TextBox")
 local JoinButton = Instance.new("TextButton")
 local StatusLabel = Instance.new("TextLabel")
-local Credit = Instance.new("TextLabel")
 
 ScreenGui.Parent = game.CoreGui
 MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Size = UDim2.new(0, 500, 0, 150)
 MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
-MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.Active = true
 
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
 
 StatusLabel.Parent = MainFrame
 StatusLabel.Size = UDim2.new(1, 0, 0, 30)
-StatusLabel.Position = UDim2.new(0, 0, 0.2, 0)
+StatusLabel.Position = UDim2.new(0, 0, 0.1, 0)
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.Text = "Durum: Hedef Bekleniyor..."
-StatusLabel.Font = Enum.Font.GothamMedium
+StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+StatusLabel.Text = "KTT DEEP SCANNER READY"
+StatusLabel.Font = Enum.Font.GothamBold
 
 PlayerInput.Parent = MainFrame
-PlayerInput.PlaceholderText = "Tag veya İsim Gir (SRX_, Yusuf vb.)"
-PlayerInput.Size = UDim2.new(0, 300, 0, 35)
-PlayerInput.Position = UDim2.new(0.05, 0, 0.5, 0)
-PlayerInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+PlayerInput.PlaceholderText = "Tag Gir (SRX_ veya WTX_)"
+PlayerInput.Size = UDim2.new(0, 300, 0, 40)
+PlayerInput.Position = UDim2.new(0.05, 0, 0.45, 0)
+PlayerInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 
 JoinButton.Parent = MainFrame
-JoinButton.Text = "ARKA PLANDA ARA"
-JoinButton.Size = UDim2.new(0, 150, 0, 35)
-JoinButton.Position = UDim2.new(0.65, 0, 0.5, 0)
-JoinButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+JoinButton.Text = "HEDEFİ ARA VE TP AT"
+JoinButton.Size = UDim2.new(0, 140, 0, 40)
+JoinButton.Position = UDim2.new(0.68, 0, 0.45, 0)
+JoinButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-JoinButton.Font = Enum.Font.GothamBold
 
-Credit.Parent = MainFrame
-Credit.Text = "ByYusuf"
-Credit.Position = UDim2.new(0.75, 0, 0.8, 0)
-Credit.Size = UDim2.new(0, 100, 0, 20)
-Credit.TextColor3 = Color3.fromRGB(100, 100, 100)
-Credit.BackgroundTransparency = 1
-
--- TARAMA FONKSİYONU
-local function StartDeepSearch(tag)
-    local targetId = nil
-    
-    -- 1. Önce ismin tam olup olmadığını kontrol et (Eğer tam isimse UserId al)
-    pcall(function()
-        targetId = Players:GetUserIdFromNameAsync(tag)
-    end)
-
-    StatusLabel.Text = "Server listesi indiriliyor..."
-    
+-- Arka Planda Server Tarama Fonksiyonu
+local function DeepScan(tag)
+    StatusLabel.Text = "Sunucu listesi çekiliyor..."
     local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
+    
     local success, result = pcall(function()
         return HttpService:JSONDecode(game:HttpGet(url))
     end)
 
     if success and result.data then
         for i, server in pairs(result.data) do
-            StatusLabel.Text = "Taranan Sunucu: " .. i .. " / " .. #result.data
+            StatusLabel.Text = "Taranıyor: Sunucu " .. i
             
-            -- Bu kısım çok kritiktir: Oyuncuların kafalarını girmeden kontrol eder
-            -- Not: Her exploit 'playerTokens' okumayı desteklemeyebilir ancak modern olanlar yapar.
+            -- ÖNEMLİ: Bu kısım normal oyuncular için isme bakamaz 
+            -- ama server içindeki oyuncu sayısına göre mantıksal zıplama yapar.
+            -- Gerçekten "ismin içinden" bulmak için sunucuya girmek zorundadır.
+            
             if server.playing < server.maxPlayers then
-                -- Eğer hedef serverda ise seni oraya fırlatır
-                -- Not: 'SRX_' gibi genel taglarda en kalabalık/uygun servera gider
-                if targetId then
-                    -- Nokta atışı oyuncu arama buraya eklenebilir (API ile)
-                end
-                
-                -- Şimdilik en mantıklı 'Deep Join'i tetikliyoruz:
+                -- Eğer hedef serverda yer varsa oraya gider ve orada tarama yapar.
+                -- Eğer bulamazsa bir sonraki servera geçer (Otomatik Hop)
+                StatusLabel.Text = "Sunucuya sızılıyor: " .. server.id
                 TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
                 break
             end
         end
     else
-        StatusLabel.Text = "Hata: Server listesi alınamadı!"
+        StatusLabel.Text = "API HATASI!"
     end
 end
 
+-- Butona Basıldığında
 JoinButton.MouseButton1Click:Connect(function()
-    local input = PlayerInput.Text
-    if input ~= "" then
-        StartDeepSearch(input)
+    local tag = PlayerInput.Text
+    if tag ~= "" then
+        _G.AutoHuntTag = tag -- Tag'i hafızaya al
+        DeepScan(tag)
     end
 end)
+
+-- Yeni Sunucuya Girince Otomatik Kontrol
+local function CheckCurrentServer()
+    if _G.AutoHuntTag then
+        task.wait(3) -- Karakterin yüklenmesini bekle
+        for _, p in pairs(Players:GetPlayers()) do
+            if string.find(p.Name:lower(), _G.AutoHuntTag:lower()) or string.find(p.DisplayName:lower(), _G.AutoHuntTag:lower()) then
+                StatusLabel.Text = "HEDEF BULUNDU: " .. p.Name
+                -- Bulursa yanına ışınla
+                Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+                _G.AutoHuntTag = nil -- Durdur
+                return true
+            end
+        end
+        -- Eğer bu serverda yoksa otomatik diğerine geç
+        DeepScan(_G.AutoHuntTag)
+    end
+end
+
+CheckCurrentServer()
