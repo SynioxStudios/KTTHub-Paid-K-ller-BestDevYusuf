@@ -10,42 +10,34 @@ local config = {
     script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt"
 }
 
-local function StartCheck()
-    local success, content = pcall(function() 
-        return game:HttpGet(config.whitelist) 
-    end)
-
+local function Start()
+    local success, content = pcall(function() return game:HttpGet(config.whitelist) end)
+    
     if success then
-        local loadSuccess, whitelistTable = pcall(function() 
-            return loadstring(content)() 
-        end)
-
-        if loadSuccess and type(whitelistTable) == "table" then
-            local myName = LocalPlayer.Name:lower()
+        local loadSuccess, whitelist = pcall(function() return loadstring(content)() end)
+        
+        if loadSuccess and type(whitelist) == "table" then
             local isAllowed = false
-
-            for name, value in pairs(whitelistTable) do
-                if name:lower() == myName and value == true then
+            for name, _ in pairs(whitelist) do
+                if name:lower() == LocalPlayer.Name:lower() then
                     isAllowed = true
                     break
                 end
             end
 
             if isAllowed then
-                -- ✅ Onaylandı
-                print("Access Granted ByYusuf!")
+                -- ✅ Access Granted
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ Sert İngilizce Mesaj (Görünme Garantili Format)
-                local kickMessage = "No Whitelist! Where did you get this? Your account is mine now 💀"
-                LocalPlayer:Kick(kickMessage)
+                -- ❌ İSTEDİĞİN SERT İNGİLİZCE MESAJ
+                LocalPlayer:Kick("Not Whitelisted. Where did you get this? Your account is mine now! 💀")
             end
         else
-            LocalPlayer:Kick("Database Error ⚠️")
+            LocalPlayer:Kick("System Error: Invalid Data")
         end
     else
-        LocalPlayer:Kick("Connection Error 🌐")
+        LocalPlayer:Kick("Network Error: Connection Failed")
     end
 end
 
-StartCheck()
+Start()
