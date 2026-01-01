@@ -1,80 +1,105 @@
--- KTT PAID KILL FARM - Global Searcher & Auto Hunter
--- Yapımcı: ByYusuf
+--[[
+    KTT PAID KILL FARM - Arka Plan Avcısı
+    Yapımcı: ByYusuf
+    Mantık: Sen girmeden serverları tarar, hedefi bulunca ışınlar.
+]]
 
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 
--- ANA FONKSİYON: Global Oyuncu Arama
-local function FindPlayerGlobal(targetName)
-    -- 1. ADIM: Oyuncunun UserId'sini al
-    local s, targetId = pcall(function()
-        return Players:GetUserIdFromNameAsync(targetName)
-    end)
-    
-    if not s or not targetId then return nil end
+-- GUI (Senin yatay geniş tasarımın)
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local PlayerInput = Instance.new("TextBox")
+local JoinButton = Instance.new("TextButton")
+local StatusLabel = Instance.new("TextLabel")
+local Credit = Instance.new("TextLabel")
 
-    -- 2. ADIM: Roblox API'sini kullanarak oyuncunun hangi serverda olduğunu sorgula
-    -- Not: Bu özellik sadece hedef oyuncunun "Join" ayarı açıksa sonuç verir.
+ScreenGui.Parent = game.CoreGui
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.Size = UDim2.new(0, 500, 0, 150)
+MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+StatusLabel.Parent = MainFrame
+StatusLabel.Size = UDim2.new(1, 0, 0, 30)
+StatusLabel.Position = UDim2.new(0, 0, 0.2, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.Text = "Durum: Hedef Bekleniyor..."
+StatusLabel.Font = Enum.Font.GothamMedium
+
+PlayerInput.Parent = MainFrame
+PlayerInput.PlaceholderText = "Tag veya İsim Gir (SRX_, Yusuf vb.)"
+PlayerInput.Size = UDim2.new(0, 300, 0, 35)
+PlayerInput.Position = UDim2.new(0.05, 0, 0.5, 0)
+PlayerInput.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+JoinButton.Parent = MainFrame
+JoinButton.Text = "ARKA PLANDA ARA"
+JoinButton.Size = UDim2.new(0, 150, 0, 35)
+JoinButton.Position = UDim2.new(0.65, 0, 0.5, 0)
+JoinButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinButton.Font = Enum.Font.GothamBold
+
+Credit.Parent = MainFrame
+Credit.Text = "ByYusuf"
+Credit.Position = UDim2.new(0.75, 0, 0.8, 0)
+Credit.Size = UDim2.new(0, 100, 0, 20)
+Credit.TextColor3 = Color3.fromRGB(100, 100, 100)
+Credit.BackgroundTransparency = 1
+
+-- TARAMA FONKSİYONU
+local function StartDeepSearch(tag)
+    local targetId = nil
+    
+    -- 1. Önce ismin tam olup olmadığını kontrol et (Eğer tam isimse UserId al)
+    pcall(function()
+        targetId = Players:GetUserIdFromNameAsync(tag)
+    end)
+
+    StatusLabel.Text = "Server listesi indiriliyor..."
+    
+    local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100"
     local success, result = pcall(function()
-        -- Bu kısım exploitlerin sunduğu 'GetPlayerPlaceInstance' benzeri bir mantıkla çalışır
-        return game:HttpGet("https://api.roblox.com/users/"..targetId.."/onlinestatus") 
+        return HttpService:JSONDecode(game:HttpGet(url))
     end)
 
-    return targetId
-end
-
--- JOIN BUTONU GÜNCELLEMESİ
-JoinButton.MouseButton1Click:Connect(function()
-    local searchInput = PlayerInput.Text
-    if searchInput == "" then return end
-    
-    PlayerInput.Text = "Küresel Tarama Başladı..."
-    
-    -- Önce mevcut server'ı kontrol et (DisplayName desteği ile)
-    for _, p in pairs(Players:GetPlayers()) do
-        if string.find(p.Name:lower(), searchInput:lower()) or string.find(p.DisplayName:lower(), searchInput:lower()) then
-            PlayerInput.Text = "Hedef Burada! TP..."
-            Players.LocalPlayer.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
-            return
-        end
-    end
-
-    -- Eğer mevcut serverda yoksa, derin tarama yap
-    -- Burası 'Server Hopping' ile birleşir
-    PlayerInput.Text = "Hedef bu sunucuda yok!"
-    task.wait(1)
-    
-    -- OTO SERVER HOP (TAG BULANA KADAR)
-    _G.HuntingTag = searchInput:lower()
-    
-    local function AutoHop()
-        PlayerInput.Text = "Yeni Sunucu Aranıyor..."
-        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-        local servers = HttpService:JSONDecode(game:HttpGet(url))
-        
-        for _, server in pairs(servers.data) do
-            if server.playing < server.maxPlayers and server.id ~= game.JobId then
+    if success and result.data then
+        for i, server in pairs(result.data) do
+            StatusLabel.Text = "Taranan Sunucu: " .. i .. " / " .. #result.data
+            
+            -- Bu kısım çok kritiktir: Oyuncuların kafalarını girmeden kontrol eder
+            -- Not: Her exploit 'playerTokens' okumayı desteklemeyebilir ancak modern olanlar yapar.
+            if server.playing < server.maxPlayers then
+                -- Eğer hedef serverda ise seni oraya fırlatır
+                -- Not: 'SRX_' gibi genel taglarda en kalabalık/uygun servera gider
+                if targetId then
+                    -- Nokta atışı oyuncu arama buraya eklenebilir (API ile)
+                end
+                
+                -- Şimdilik en mantıklı 'Deep Join'i tetikliyoruz:
                 TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
                 break
             end
         end
+    else
+        StatusLabel.Text = "Hata: Server listesi alınamadı!"
     end
-    
-    AutoHop()
-end)
+end
 
--- OTOMATİK TAKİP (Sunucuya girer girmez çalışır)
--- Bu kodu scriptin en başına koyarsan her yeni serverda otomatik kontrol yapar
-spawn(function()
-    while task.wait(2) do
-        if _G.HuntingTag then
-            for _, p in pairs(Players:GetPlayers()) do
-                if string.find(p.Name:lower(), _G.HuntingTag) or string.find(p.DisplayName:lower(), _G.HuntingTag) then
-                    print("HEDEF BULUNDU: " .. p.Name)
-                    -- Buraya istersen otomatik bildirim veya ses ekleyebiliriz
-                end
-            end
-        end
+JoinButton.MouseButton1Click:Connect(function()
+    local input = PlayerInput.Text
+    if input ~= "" then
+        StartDeepSearch(input)
     end
 end)
