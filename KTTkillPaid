@@ -1,27 +1,15 @@
---[[
-    🚀 ByYusuf - PRIVATE LOADER 🚀
---]]
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
--- Configuration
 local config = {
     whitelist = "https://pastebin.com/raw/bj3aQnNh",
     script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt"
 }
 
 local function StartCheck()
-    -- Fetching Whitelist
-    local success, content = pcall(function()
-        return game:HttpGet(config.whitelist)
-    end)
-
+    local success, content = pcall(function() return game:HttpGet(config.whitelist) end)
     if success then
-        local loadSuccess, whitelistTable = pcall(function()
-            return loadstring(content)()
-        end)
-
+        local loadSuccess, whitelistTable = pcall(function() return loadstring(content)() end)
         if loadSuccess and type(whitelistTable) == "table" then
             local myName = LocalPlayer.Name:lower()
             local isAllowed = false
@@ -34,18 +22,16 @@ local function StartCheck()
             end
 
             if isAllowed then
-                -- ✅ Success: Loading the script
-                warn("Access Granted! Loading script...")
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ Kick message in English with Emoji
-                LocalPlayer:Kick("🚫 Access Denied: You are not whitelisted.")
+                -- Emoji sonda olacak şekilde, kısa ve öz İngilizce mesaj
+                LocalPlayer:Kick("No Whitelist Found 🚫")
             end
         else
-            LocalPlayer:Kick("⚠️ Database Error: Please try again later.")
+            LocalPlayer:Kick("Data Error ⚠️")
         end
     else
-        LocalPlayer:Kick("🌐 Connection Error: Failed to reach server.")
+        LocalPlayer:Kick("Connection Error 🌐")
     end
 end
 
