@@ -1,89 +1,47 @@
--- KTT PAID KILL FARM - Teleport Test Version
+-- KTT PAID KILL FARM - Gelişmiş Player Tracker
 -- Yapımcı: ByYusuf
 
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local UICorner = Instance.new("UICorner")
-local Title = Instance.new("TextLabel")
-local Credit = Instance.new("TextLabel")
-local PlayerInput = Instance.new("TextBox")
-local JoinButton = Instance.new("TextButton")
-local JoinCorner = Instance.new("UICorner")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
 
--- UI Ayarları
-ScreenGui.Parent = game.CoreGui
-MainFrame.Parent = ScreenGui
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.Position = UDim2.new(0.3, 0, 0.4, 0)
-MainFrame.Size = UDim2.new(0, 500, 0, 150)
-MainFrame.Active = true
-MainFrame.Draggable = true
-UICorner.Parent = MainFrame
-
-Title.Parent = MainFrame
-Title.Text = "KTT PAID KILL FARM"
-Title.TextColor3 = Color3.fromRGB(255, 0, 0)
-Title.TextSize = 18
-Title.Size = UDim2.new(0, 250, 0, 30)
-Title.Position = UDim2.new(0.05, 0, 0.05, 0)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.GothamBold
-
-Credit.Parent = MainFrame
-Credit.Text = "ByYusuf"
-Credit.TextColor3 = Color3.fromRGB(150, 150, 150)
-Credit.TextSize = 18
-Credit.Position = UDim2.new(0.65, 0, 0.75, 0)
-Credit.Size = UDim2.new(0, 160, 0, 30)
-Credit.BackgroundTransparency = 1
-Credit.Font = Enum.Font.Code
-
--- TextBox
-PlayerInput.Parent = MainFrame
-PlayerInput.PlaceholderText = "Oyuncu ismi yazın..."
-PlayerInput.Size = UDim2.new(0, 250, 0, 35)
-PlayerInput.Position = UDim2.new(0.05, 0, 0.4, 0)
-PlayerInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-PlayerInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-local tCorner = Instance.new("UICorner")
-tCorner.CornerRadius = UDim.new(0, 5)
-tCorner.Parent = PlayerInput
-
--- Buton
-JoinButton.Parent = MainFrame
-JoinButton.Text = "TELEPORT"
-JoinButton.Size = UDim2.new(0, 120, 0, 35)
-JoinButton.Position = UDim2.new(0.58, 0, 0.4, 0)
-JoinButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
-JoinButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-JoinButton.Font = Enum.Font.GothamBold
-JoinCorner.Parent = JoinButton
-
--- TELEPORT FONKSİYONU
 JoinButton.MouseButton1Click:Connect(function()
-    local targetName = PlayerInput.Text:lower()
-    local targetPlayer = nil
+    local targetName = PlayerInput.Text
+    if targetName == "" then return end
     
-    -- Serverdaki oyuncuları tara
+    PlayerInput.Text = "Aranıyor: " .. targetName
+    
+    -- 1. ADIM: Mevcut server'ı kontrol et
     for _, v in pairs(game.Players:GetPlayers()) do
-        if v.Name:lower():sub(1, #targetName) == targetName then
-            targetPlayer = v
-            break
+        if v.Name:lower() == targetName:lower() then
+            PlayerInput.Text = "Aynı serverda! TP..."
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
+            return
         end
     end
+
+    -- 2. ADIM: Farklı server'ları tara (Deep Search)
+    PlayerInput.Text = "Serverlar taranıyor..."
     
-    if targetPlayer then
-        if targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            -- Hedefin 3 birim arkasına ışınla
-            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-            PlayerInput.Text = "Işınlandı: " .. targetPlayer.Name
-        else
-            PlayerInput.Text = "Karakter yüklenmedi!"
+    local success, result = pcall(function()
+        -- Muscle Legends server listesini çeken API
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        local serverList = HttpService:JSONDecode(game:HttpGet(url))
+        
+        for _, server in pairs(serverList.data) do
+            -- Her server'daki oyuncu sayısına ve verisine bakıyoruz
+            -- Not: Bu işlem bazı exploitlerde 'game:HttpGet' izni gerektirir.
+            if server.playing < server.maxPlayers then
+                -- Burada teknik olarak oyuncu ismini o server'a girmeden kontrol etmek 
+                -- Roblox'un yeni gizlilik ayarları nedeniyle kısıtlıdır. 
+                -- Ancak script seni 'potansiyel' serverlara hızlıca zıplatabilir.
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, game.Players.LocalPlayer)
+                break
+            end
         end
-    else
-        PlayerInput.Text = "Oyuncu bulunamadı!"
+    end)
+
+    if not success then
+        PlayerInput.Text = "Hata: API Kısıtlı!"
+        warn("Hata detayı: ", result)
     end
-    
-    task.wait(2)
-    PlayerInput.Text = ""
 end)
