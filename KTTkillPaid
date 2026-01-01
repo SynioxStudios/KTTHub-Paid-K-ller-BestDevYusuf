@@ -1,70 +1,64 @@
--- KTT PAID KILL FARM - Global Scanner
--- Yapımcı: ByYusuf
+--[[
+    🚀 YUSUF EMIR REDYUS - ÖZEL LOADER 🚀
+    🛡️ Whitelist Onayı Sonrası GitHub Scriptini Çalıştırır.
+--]]
 
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- (GUI Kodlarını kısa tutuyorum, buton fonksiyonuna odaklanalım)
+-- Ayarlar
+local whitelistUrl = "https://pastebin.com/raw/bj3aQnNh" -- Senin Whitelist Linkin
+local scriptUrl = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt" -- Çalışacak Script
 
-local function GetUserThumbnail(userId)
-    -- Oyuncunun kafa resmi kodunu alır
-    return "https://www.roblox.com/headshot-thumbnail/image?userId="..userId.."&width=48&height=48&format=png"
-end
-
-JoinButton.MouseButton1Click:Connect(function()
-    local targetName = PlayerInput.Text
-    if targetName == "" then return end
-
-    StatusLabel.Text = "Hedef verisi alınıyor..."
-    
-    -- 1. Hedefin UserId'sini bul
-    local s, targetId = pcall(function()
-        return Players:GetUserIdFromNameAsync(targetName)
+local function DogrulamaVeCalistir()
+    -- 1. Whitelist Verisini Çek
+    local success, content = pcall(function()
+        return game:HttpGet(whitelistUrl)
     end)
 
-    if not s or not targetId then 
-        StatusLabel.Text = "Oyuncu bulunamadı!"
-        return 
-    end
+    if success then
+        -- 2. İçeriği Tabloya Dönüştür
+        local loadSuccess, whitelist = pcall(function()
+            return loadstring(content)()
+        end)
 
-    -- 2. Hedefin kafa resmi token'ını al (Sorgulama için)
-    StatusLabel.Text = "Global tarama başlatıldı..."
-    
-    -- 3. Tüm Sunucuları tara (Girmeden!)
-    task.spawn(function()
-        local cursor = ""
-        while true do
-            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&cursor=" .. cursor
-            local success, result = pcall(function()
-                return HttpService:JSONDecode(game:HttpGet(url))
-            end)
+        if loadSuccess and type(whitelist) == "table" then
+            local myName = LocalPlayer.Name:lower()
+            local yetkiVarmi = false
 
-            if success and result.data then
-                for _, server in pairs(result.data) do
-                    -- Her sunucudaki 'playerTokens' (gizli oyuncu kimlikleri) listesine bak
-                    -- Bu tokenlar oyuncuların kim olduğunu girmeden anlamamızı sağlar
-                    if server.playing < server.maxPlayers then
-                        -- Bu aşamada exploit'in yeteneğine göre bir kontrol yapılır
-                        -- Çoğu modern exploit bu aşamada 'server.playerTokens' içinden hedefi bulabilir
-                        
-                        -- Şimdilik en hızlı eşleşen serverı bulup fırlatıyoruz
-                        StatusLabel.Text = "Potansiyel Server Bulundu!"
-                        TeleportService:TeleportToPlaceInstance(game.PlaceId, server.id, Players.LocalPlayer)
-                        return
-                    end
-                end
-                
-                if result.nextPageCursor then
-                    cursor = result.nextPageCursor
-                else
+            -- 3. İsim Kontrolü Yap
+            for name, value in pairs(whitelist) do
+                if name:lower() == myName and value == true then
+                    yetkiVarmi = true
                     break
                 end
-            else
-                break
             end
-            task.wait(0.1)
+
+            if yetkiVarmi then
+                -- ✅ BEYAZ LİSTEDE VAR: Scripti Çalıştır
+                print("------------------------------------------")
+                print("✅ ERİŞİM ONAYLANDI: " .. LocalPlayer.Name)
+                print("🌀 Script Yükleniyor, lütfen bekleyin...")
+                print("------------------------------------------")
+                
+                local scriptSuccess, scriptErr = pcall(function()
+                    loadstring(game:HttpGet(scriptUrl))()
+                end)
+                
+                if not scriptSuccess then
+                    warn("⚠️ Script çalıştırılırken hata oluştu: ", scriptErr)
+                end
+            else
+                -- ❌ BEYAZ LİSTEDE YOK: Oyundan At (Emoji Eklendi)
+                LocalPlayer:Kick("\n\n⚠️ [ERİŞİM REDDEDİLDİ] ⚠️\n\n🚫 Bu scripti kullanma yetkiniz yok!\n👤 Kullanıcı: " .. LocalPlayer.Name .. "\n👑 Sahibi: yusufemirredyus\n\n✨ Daha fazla bilgi için sahibiyle iletişime geçin. ✨")
+            end
+        else
+            LocalPlayer:Kick("\n⚙️ [SİSTEM HATASI]\nWhitelist verisi okunamadı. Lütfen daha sonra tekrar deneyin.")
         end
-        StatusLabel.Text = "Hiçbir sunucuda bulunamadı."
-    end)
-end)
+    else
+        LocalPlayer:Kick("\n🌐 [BAĞLANTI HATASI]\nSunucuyla bağlantı kurulamadı. İnternetinizi kontrol edin.")
+    end
+end
+
+-- Loader'ı Başlat
+DogrulamaVeCalistir()
