@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local config = {
     whitelist = "https://pastebin.com/raw/bj3aQnNh",
-    -- Yeni verdiğin script linki:
+-- Yeni Loader
     script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/SynioxKillv2.txt"
 }
 
