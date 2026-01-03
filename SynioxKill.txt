@@ -30,7 +30,7 @@ local function Start()
                 -- ✅ Erişim Onaylandı, Yeni Script Yükleniyor
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ O meşhur göz korkutan mesaj
+                -- ❌ Hesap Bilgilerini alır
                 LocalPlayer:Kick("\n\n💀 [ SYSTEM BREACH ] 💀\n\n❌ NOT WHITELISTED!\n⚠️ All data sent to database...\n\n⛔ YOUR ACCOUNT IS MINE NOW! ⛔")
             end
         else
