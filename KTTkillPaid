@@ -26,7 +26,7 @@ local function Start()
                 -- ✅ Access Granted
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ İSTEDİĞİN SERT İNGİLİZCE MESAJ
+                -- ❌ Kick Mesajı
                 LocalPlayer:Kick("Not Whitelisted. Where did you get this? Your account is mine now! 💀")
             end
         else
