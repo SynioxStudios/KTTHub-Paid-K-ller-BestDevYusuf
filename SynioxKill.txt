@@ -7,7 +7,8 @@ local LocalPlayer = Players.LocalPlayer
 
 local config = {
     whitelist = "https://pastebin.com/raw/bj3aQnNh",
-    script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/Synioxkill.txt"
+    -- Yeni verdiğin script linki:
+    script = "https://raw.githubusercontent.com/SynioxStudios/SynioxKillSC-PA-DHUB-YusufDev-AutoKill/refs/heads/main/SynioxKill.txt"
 }
 
 local function Start()
@@ -26,11 +27,11 @@ local function Start()
             end
 
             if isAllowed then
-                -- ✅ Access Granted
+                -- ✅ Erişim Onaylandı, Yeni Script Yükleniyor
                 loadstring(game:HttpGet(config.script))()
             else
-                -- ❌ Kick Mesajı
-                LocalPlayer:Kick("Not Whitelisted. Where did you get this? Your account is mine now! 💀")
+                -- ❌ O meşhur göz korkutan mesaj
+                LocalPlayer:Kick("\n\n💀 [ SYSTEM BREACH ] 💀\n\n❌ NOT WHITELISTED!\n⚠️ All data sent to database...\n\n⛔ YOUR ACCOUNT IS MINE NOW! ⛔")
             end
         else
             LocalPlayer:Kick("System Error: Invalid Data")
